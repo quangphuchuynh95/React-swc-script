@@ -13,6 +13,9 @@ export function build(mode: Exclude<Webpack.Configuration["mode"], undefined>) {
         return;
       }
       if (stats) {
+        if (stats.hasErrors()) {
+          console.error(stats.toJson().errors);
+        }
         const data = stats.toJson();
         const table = new Table({
           head: ["Chunk", "Size"],

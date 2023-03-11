@@ -1,6 +1,6 @@
 {
   "name": "react-swc-script",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "main": "dist/index.js",
   "license": "MIT",
   "engines": {
