@@ -157,19 +157,21 @@ export const webpackConfigure = (
     resolveLoader: {
       modules: [
         path.resolve(__dirname, "../node_modules"),
-        path.resolve(process.cwd(), "../node_modules"),
+        path.resolve(process.cwd(), "./node_modules"),
       ],
     },
   };
 };
 
-export const devServerConfig: WebpackDevServer.Configuration = {
-  historyApiFallback: true,
-  port: process.env.PORT,
-  static: {
-    directory: path.resolve(process.cwd(), "public"),
-  },
-  hot: true,
-  liveReload: false,
-  setupMiddlewares,
+export const devServerConfig = (): WebpackDevServer.Configuration =>  {
+  return  {
+    historyApiFallback: true,
+    port: process.env.PORT,
+    static: {
+      directory: path.resolve(process.cwd(), "public"),
+    },
+    hot: true,
+    liveReload: false,
+    setupMiddlewares,
+  }
 };
