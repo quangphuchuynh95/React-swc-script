@@ -1,4 +1,3 @@
-import { globSync } from "glob";
 import path, { resolve as pathResolve } from "path";
 import { Configuration } from "webpack-dev-server";
 import dotenv from "dotenv";
