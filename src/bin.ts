@@ -26,10 +26,15 @@ program
   });
 
 program
-  .command("dev")
+  .command("start")
   .description("Start dev server")
-  .action(async () => {
-      await dev()
+    .argument("[mode]", "start mode (prod|dev) default is dev")
+  .action(async (str, { mode = "prod" }: { mode: string }) => {
+      if (mode === "prod") {
+          await dev("production");
+      } else {
+          await dev("development");
+      }
   });
 
 program.parse();
