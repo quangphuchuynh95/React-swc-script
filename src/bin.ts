@@ -11,7 +11,7 @@ program
   .command("build")
   .description("Build")
   .argument("[mode]", "build mode (prod|dev) default is prod")
-  .action(async (str, { mode = "prod" }: { mode: string }) => {
+  .action(async (mode = 'prod') => {
     try {
       if (mode === "dev") {
         await build("development");
@@ -29,7 +29,7 @@ program
   .command("start")
   .description("Start dev server")
     .argument("[mode]", "start mode (prod|dev) default is dev")
-  .action(async (str, { mode = "dev" }: { mode: string }) => {
+  .action(async (mode = "dev") => {
       if (mode === "prod") {
           await dev("production");
       } else {

@@ -13,6 +13,7 @@ export const webpackConfigure = (
 ): Webpack.Configuration => {
   const isDevelopment = mode === "development";
   loadEnvFiles(mode);
+  process.env.NODE_ENV = mode
 
   const plugins: Exclude<Webpack.Configuration["plugins"], undefined> = [
     new CopyPlugin({
@@ -22,7 +23,8 @@ export const webpackConfigure = (
       "process.env": JSON.stringify(process.env),
     }),
     new HtmlWebpackPlugin({
-      template: "index.html", // to import index.html file inside index.js
+      templateParameters: process.env,
+      template: "!!handlebars-loader!src/index.hbs", // to import index.html file inside index.js
     }),
     new MiniCssExtractPlugin({
       filename: "index.[fullhash].css",
