@@ -29,7 +29,7 @@ program
   .command("start")
   .description("Start dev server")
     .argument("[mode]", "start mode (prod|dev) default is dev")
-  .action(async (str, { mode = "prod" }: { mode: string }) => {
+  .action(async (str, { mode = "dev" }: { mode: string }) => {
       if (mode === "prod") {
           await dev("production");
       } else {
