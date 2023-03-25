@@ -1,6 +1,6 @@
 {
   "name": "react-swc-script",
-  "version": "1.1.3",
+  "version": "1.1.13",
   "main": "dist/index.js",
   "license": "MIT",
   "engines": {
@@ -10,12 +10,12 @@
   "scripts": {
     "type-check": "yarn tsc",
     "fmt": "yarn prettier src --write",
-    "build": "yarn swc ./src -d dist",
+    "build": "yarn swc ./src -d dist -s",
     "grant-permission": "chmod +x dist/bin.js"
   },
   "dependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
-    "@svgr/webpack": "^6.5.1",
+    "@svgr/webpack": "^7.0.0",
     "bytes": "^3.1.2",
     "cli-progress": "^3.12.0",
     "cli-table": "^0.3.11",
@@ -26,28 +26,29 @@
     "css-loader": "^6.7.3",
     "dotenv": "^16.0.3",
     "file-loader": "^6.2.0",
+    "handlebars": "^4.7.7",
     "handlebars-loader": "^1.7.3",
     "html-webpack-plugin": "^5.5.0",
     "http-proxy-middleware": "^2.0.6",
-    "mini-css-extract-plugin": "^2.7.3",
+    "mini-css-extract-plugin": "^2.7.5",
     "react-refresh": "^0.14.0",
     "resolve-url-loader": "^5.0.0",
-    "sass": "^1.59.2",
-    "sass-loader": "^13.2.0",
+    "sass": "^1.60.0",
+    "sass-loader": "^13.2.1",
     "source-map-loader": "^4.0.1",
     "swc-loader": "^0.2.3",
-    "webpack": "^5.76.1",
-    "webpack-dev-server": "^4.11.1",
+    "webpack": "^5.76.3",
+    "webpack-dev-server": "^4.13.1",
     "webpackbar": "^5.0.2"
   },
   "devDependencies": {
-    "prettier": "^2.8.4",
+    "@swc/cli": "^0.1.62",
+    "@swc/core": "^1.3.42",
     "@types/bytes": "^3.1.1",
     "@types/cli-progress": "^3.11.0",
     "@types/cli-table": "^0.3.1",
-    "@swc/cli": "^0.1.62",
-    "@swc/core": "^1.3.39",
     "chokidar": "^3.5.3",
-    "typescript": "^4.9.5"
+    "prettier": "^2.8.7",
+    "typescript": "^5.0.2"
   }
 }

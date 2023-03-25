@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { program } from "commander";
 import { build } from "./build";
-import {dev} from "./dev";
+import { start } from "./start";
 
 program
   .name("react-swc-script")
@@ -11,7 +11,7 @@ program
   .command("build")
   .description("Build")
   .argument("[mode]", "build mode (prod|dev) default is prod")
-  .action(async (mode = 'prod') => {
+  .action(async (mode = "prod") => {
     try {
       if (mode === "dev") {
         await build("development");
@@ -28,13 +28,13 @@ program
 program
   .command("start")
   .description("Start dev server")
-    .argument("[mode]", "start mode (prod|dev) default is dev")
+  .argument("[mode]", "start mode (prod|dev) default is dev")
   .action(async (mode = "dev") => {
-      if (mode === "prod") {
-          await dev("production");
-      } else {
-          await dev("development");
-      }
+    if (mode === "prod") {
+      await start("production");
+    } else {
+      await start("development");
+    }
   });
 
 program.parse();
