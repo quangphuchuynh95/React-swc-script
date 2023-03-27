@@ -8,10 +8,12 @@ import WebpackDevServer from "webpack-dev-server";
 import { alias, loadEnvFiles, setupMiddlewares } from "./config-helper";
 import cliProgress from "cli-progress";
 import * as fs from "fs";
+import { execSync } from 'child_process'
 
 export interface ReactSwcConfig {
   projectRoot: string;
-  packageManager: 'yarn' | 'npm' | 'pnpm';
+  useCommitHash?: boolean;
+  packageManager: "yarn" | "npm" | "pnpm";
 }
 
 export const webpackConfigure = (
@@ -22,8 +24,8 @@ export const webpackConfigure = (
   loadEnvFiles(mode);
   process.env.NODE_ENV = mode;
   let config: ReactSwcConfig = {
-    projectRoot: '.',
-    packageManager: 'npm',
+    projectRoot: ".",
+    packageManager: "npm",
   };
   if (fs.existsSync(path.resolve(process.cwd(), "react-swc.json"))) {
     const overrideConfig = require(path.resolve(
@@ -39,6 +41,11 @@ export const webpackConfigure = (
       ),
     };
   }
+  let prefix = "static";
+  if (config.useCommitHash) {
+    prefix = execSync('git rev-parse HEAD').toString('utf-8').trim();
+  }
+
 
   const resolveLoader = {
     modules: [
@@ -46,17 +53,17 @@ export const webpackConfigure = (
       path.resolve(process.cwd(), "./node_modules"),
       path.resolve(process.cwd(), config.projectRoot, "./node_modules"),
     ],
-  }
+  };
 
   const resolve = {
     extensions: ["", ".js", ".jsx", ".json", ".ts", ".tsx"],
     alias: alias(),
-    modules: ['node_modules']
-  }
+    modules: ["node_modules"],
+  };
 
-  if (config.packageManager === 'pnpm' && process.env.NODE_PATH) {
-    resolveLoader.modules.push(...process.env.NODE_PATH.split(':'));
-    resolve.modules.push(...process.env.NODE_PATH.split(':'));
+  if (config.packageManager === "pnpm" && process.env.NODE_PATH) {
+    resolveLoader.modules.push(...process.env.NODE_PATH.split(":"));
+    resolve.modules.push(...process.env.NODE_PATH.split(":"));
   }
 
   const plugins: Exclude<Webpack.Configuration["plugins"], undefined> = [
@@ -71,8 +78,8 @@ export const webpackConfigure = (
       template: "!!handlebars-loader!src/index.hbs", // to import index.html file inside index.js
     }),
     new MiniCssExtractPlugin({
-      filename: "index.[fullhash].css",
-      chunkFilename: "[id].[fullhash].bundle.css",
+      filename: path.join(prefix, "index.[fullhash].css"),
+      chunkFilename: path.join(prefix, "[id].[fullhash].bundle.css"),
     }),
   ];
 
@@ -124,13 +131,16 @@ export const webpackConfigure = (
     output: {
       publicPath: process.env.PUBLIC_URL || "/",
       path: path.resolve(process.cwd(), "build"),
-      filename: "index.[fullhash].js",
-      chunkFilename: "[id].[fullhash].bundle.js",
+      filename: path.join(prefix, "index.[fullhash].js"),
+      chunkFilename: path.join(prefix, "[id].[fullhash].bundle.js"),
     },
     plugins,
-    performance: (action !== 'serve' || mode !== 'production') ? undefined : {
-      hints: false,
-    },
+    performance:
+      action !== "serve" || mode !== "production"
+        ? undefined
+        : {
+            hints: false,
+          },
 
     module: {
       rules: [
@@ -172,6 +182,9 @@ export const webpackConfigure = (
         {
           test: /\.(jpe?g|png|gif|ico|eot|ttf|woff2?)(\?v=\d+\.\d+\.\d+)?$/i,
           type: "asset/resource",
+          generator: {
+            filename: path.join(prefix, "[hash][ext][query]"),
+          },
         },
         {
           test: /\.svg$/i,
@@ -195,6 +208,9 @@ export const webpackConfigure = (
             },
             {
               loader: "file-loader",
+              options: {
+                name: path.join(prefix, "[contenthash].[ext]"),
+              },
             },
           ],
         },
