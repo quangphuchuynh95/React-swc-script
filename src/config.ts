@@ -12,7 +12,8 @@ import { execSync } from 'child_process'
 
 export interface ReactSwcConfig {
   projectRoot: string;
-  useCommitHash?: boolean;
+  devSourceMap: string;
+  useCommitHash: boolean;
   packageManager: "yarn" | "npm" | "pnpm";
 }
 
@@ -26,6 +27,8 @@ export const webpackConfigure = (
   let config: ReactSwcConfig = {
     projectRoot: ".",
     packageManager: "npm",
+    devSourceMap: "eval",
+    useCommitHash: false,
   };
   if (fs.existsSync(path.resolve(process.cwd(), "react-swc.json"))) {
     const overrideConfig = require(path.resolve(
@@ -78,8 +81,8 @@ export const webpackConfigure = (
       template: "!!handlebars-loader!src/index.hbs", // to import index.html file inside index.js
     }),
     new MiniCssExtractPlugin({
-      filename: path.join(prefix, "index.[fullhash].css"),
-      chunkFilename: path.join(prefix, "[id].[fullhash].bundle.css"),
+      filename: path.join(prefix, mode === 'development' ? "[file].css" : "index.[fullhash].css"),
+      chunkFilename: path.join(prefix, `[id]${mode !== 'development' ? '.[fullhash]' : ''}.bundle.css`),
     }),
   ];
 
@@ -123,7 +126,7 @@ export const webpackConfigure = (
     },
     resolve,
     // This can make build slower, faster, also affect to file size
-    devtool: mode !== "production" ? "eval-source-map" : "source-map",
+    devtool: mode !== "production" ? config.devSourceMap : undefined,
     entry: [
       path.resolve(process.cwd(), "./src/index.tsx"),
       path.resolve(process.cwd(), "./src/index.scss"),
@@ -131,8 +134,8 @@ export const webpackConfigure = (
     output: {
       publicPath: process.env.PUBLIC_URL || "/",
       path: path.resolve(process.cwd(), "build"),
-      filename: path.join(prefix, "index.[fullhash].js"),
-      chunkFilename: path.join(prefix, "[id].[fullhash].bundle.js"),
+      filename: path.join(prefix, mode === 'development' ? "index.js" : "index.[fullhash].js"),
+      chunkFilename: path.join(prefix, `[id]${mode !== 'development' ? '.[fullhash]' : ''}.bundle.js`),
     },
     plugins,
     performance:
@@ -176,7 +179,12 @@ export const webpackConfigure = (
             MiniCssExtractPlugin.loader,
             "css-loader",
             "resolve-url-loader",
-            "sass-loader",
+            {
+              loader: "sass-loader",
+              options: {
+                sourceMap: true, // <-- !!IMPORTANT!!
+              }
+            },
           ],
         },
         {
@@ -209,7 +217,7 @@ export const webpackConfigure = (
             {
               loader: "file-loader",
               options: {
-                name: path.join(prefix, "[contenthash].[ext]"),
+                name: path.join(prefix, `${mode === 'development' ? '[path][name]' : '[contenthash]'}.[ext]`),
               },
             },
           ],
