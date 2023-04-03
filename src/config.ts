@@ -4,15 +4,16 @@ import Webpack from "webpack";
 import ReactRefreshWebpackPlugin from "@pmmmwh/react-refresh-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import CopyPlugin from "copy-webpack-plugin";
-import WebpackDevServer from "webpack-dev-server";
+import WebpackDevServer, {Configuration} from "webpack-dev-server";
 import { alias, loadEnvFiles, setupMiddlewares } from "./config-helper";
 import cliProgress from "cli-progress";
 import * as fs from "fs";
-import { execSync } from 'child_process'
+import { execSync } from "child_process";
 
 export interface ReactSwcConfig {
   projectRoot: string;
   devSourceMap: string;
+  cacheDir?: string;
   useCommitHash: boolean;
   packageManager: "yarn" | "npm" | "pnpm";
 }
@@ -46,9 +47,31 @@ export const webpackConfigure = (
   }
   let prefix = "static";
   if (config.useCommitHash) {
-    prefix = execSync('git rev-parse HEAD').toString('utf-8').trim();
+    try {
+      const HEAD = fs
+        .readFileSync(
+          path.resolve(process.cwd(), config.projectRoot, ".git", "HEAD")
+        )
+        .toString("utf-8").trim();
+      if (HEAD.startsWith("ref: ")) {
+        prefix = fs
+          .readFileSync(
+            path.resolve(
+              process.cwd(),
+              config.projectRoot,
+              ".git",
+              HEAD.slice(5)
+            )
+          )
+          .toString("utf-8").trim();
+      } else {
+        prefix = HEAD;
+      }
+    } catch (e) {
+      console.error(e)
+      console.error("Can't get git commit");
+    }
   }
-
 
   const resolveLoader = {
     modules: [
@@ -81,8 +104,14 @@ export const webpackConfigure = (
       template: "!!handlebars-loader!src/index.hbs", // to import index.html file inside index.js
     }),
     new MiniCssExtractPlugin({
-      filename: path.join(prefix, mode === 'development' ? "[file].css" : "index.[fullhash].css"),
-      chunkFilename: path.join(prefix, `[id]${mode !== 'development' ? '.[fullhash]' : ''}.bundle.css`),
+      filename: path.join(
+        prefix,
+        mode === "development" ? "[file].css" : "index.[fullhash].css"
+      ),
+      chunkFilename: path.join(
+        prefix,
+        `[id]${mode !== "development" ? ".[fullhash]" : ""}.bundle.css`
+      ),
     }),
   ];
 
@@ -97,7 +126,7 @@ export const webpackConfigure = (
   let start = false;
 
   plugins.push(
-    new Webpack.ProgressPlugin((percentage, message) => {
+    new Webpack.ProgressPlugin((percentage) => {
       if (!start) {
         bar1.start(100, percentage * 100);
         start = true;
@@ -109,8 +138,20 @@ export const webpackConfigure = (
     })
   );
 
+  let cache: Webpack.Configuration['cache'] = {
+    type: 'memory'
+  }
+
+  if (config.cacheDir && action === 'build') {
+    cache = {
+      type: 'filesystem',
+      cacheDirectory: path.resolve(process.cwd(), config.cacheDir),
+    }
+  }
+
   return {
     mode,
+    cache,
     infrastructureLogging: {
       appendOnly: true,
       level: "verbose",
@@ -134,8 +175,14 @@ export const webpackConfigure = (
     output: {
       publicPath: process.env.PUBLIC_URL || "/",
       path: path.resolve(process.cwd(), "build"),
-      filename: path.join(prefix, mode === 'development' ? "index.js" : "index.[fullhash].js"),
-      chunkFilename: path.join(prefix, `[id]${mode !== 'development' ? '.[fullhash]' : ''}.bundle.js`),
+      filename: path.join(
+        prefix,
+        mode === "development" ? "index.js" : "index.[fullhash].js"
+      ),
+      chunkFilename: path.join(
+        prefix,
+        `[id]${mode !== "development" ? ".[fullhash]" : ""}.bundle.js`
+      ),
     },
     plugins,
     performance:
@@ -150,7 +197,7 @@ export const webpackConfigure = (
         ...(isDevelopment
           ? [
               {
-                test: /\@dfnivo.+\.js$/,
+                test: /@dfnivo.+\.js$/,
                 enforce: "pre" as const,
                 use: ["source-map-loader"],
               },
@@ -183,7 +230,7 @@ export const webpackConfigure = (
               loader: "sass-loader",
               options: {
                 sourceMap: true, // <-- !!IMPORTANT!!
-              }
+              },
             },
           ],
         },
@@ -217,7 +264,12 @@ export const webpackConfigure = (
             {
               loader: "file-loader",
               options: {
-                name: path.join(prefix, `${mode === 'development' ? '[path][name]' : '[contenthash]'}.[ext]`),
+                name: path.join(
+                  prefix,
+                  `${
+                    mode === "development" ? "[path][name]" : "[contenthash]"
+                  }.[ext]`
+                ),
               },
             },
           ],
