@@ -4,13 +4,14 @@ import Webpack from "webpack";
 import ReactRefreshWebpackPlugin from "@pmmmwh/react-refresh-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import CopyPlugin from "copy-webpack-plugin";
-import WebpackDevServer, {Configuration} from "webpack-dev-server";
+import WebpackDevServer, { Configuration } from "webpack-dev-server";
 import { alias, loadEnvFiles, setupMiddlewares } from "./config-helper";
 import cliProgress from "cli-progress";
 import * as fs from "fs";
 import { execSync } from "child_process";
 
 export interface ReactSwcConfig {
+  templateFile: string;
   projectRoot: string;
   devSourceMap: string;
   cacheDir?: string;
@@ -26,6 +27,7 @@ export const webpackConfigure = (
   loadEnvFiles(mode);
   process.env.NODE_ENV = mode;
   let config: ReactSwcConfig = {
+    templateFile: "index.html",
     projectRoot: ".",
     packageManager: "npm",
     devSourceMap: "eval",
@@ -45,6 +47,9 @@ export const webpackConfigure = (
       ),
     };
   }
+  if (config.templateFile.endsWith(".hbs")) {
+    config.templateFile = `!!handlebars-loader!${config.templateFile}`;
+  }
   let prefix = "static";
   if (config.useCommitHash) {
     try {
@@ -52,7 +57,8 @@ export const webpackConfigure = (
         .readFileSync(
           path.resolve(process.cwd(), config.projectRoot, ".git", "HEAD")
         )
-        .toString("utf-8").trim();
+        .toString("utf-8")
+        .trim();
       if (HEAD.startsWith("ref: ")) {
         prefix = fs
           .readFileSync(
@@ -63,12 +69,13 @@ export const webpackConfigure = (
               HEAD.slice(5)
             )
           )
-          .toString("utf-8").trim();
+          .toString("utf-8")
+          .trim();
       } else {
         prefix = HEAD;
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
       console.error("Can't get git commit");
     }
   }
@@ -91,17 +98,24 @@ export const webpackConfigure = (
     resolveLoader.modules.push(...process.env.NODE_PATH.split(":"));
     resolve.modules.push(...process.env.NODE_PATH.split(":"));
   }
-
   const plugins: Exclude<Webpack.Configuration["plugins"], undefined> = [
     new CopyPlugin({
       patterns: [path.resolve(process.cwd(), "public")],
     }),
     new Webpack.DefinePlugin({
-      "process.env": JSON.stringify(process.env),
+      ...Object.fromEntries(
+        Object.entries(process.env)
+          .filter(
+            ([key]) =>
+              ["NODE_ENV", "PUBLIC_PATH"].includes(key) ||
+              key.startsWith("REACT_APP")
+          )
+          .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
+      ),
     }),
     new HtmlWebpackPlugin({
       templateParameters: process.env,
-      template: "!!handlebars-loader!src/index.hbs", // to import index.html file inside index.js
+      template: config.templateFile, // to import index.html file inside index.js
     }),
     new MiniCssExtractPlugin({
       filename: path.join(
@@ -138,15 +152,15 @@ export const webpackConfigure = (
     })
   );
 
-  let cache: Webpack.Configuration['cache'] = {
-    type: 'memory'
-  }
+  let cache: Webpack.Configuration["cache"] = {
+    type: "memory",
+  };
 
-  if (config.cacheDir && action === 'build') {
+  if (config.cacheDir && action === "build") {
     cache = {
-      type: 'filesystem',
+      type: "filesystem",
       cacheDirectory: path.resolve(process.cwd(), config.cacheDir),
-    }
+    };
   }
 
   return {
@@ -167,7 +181,7 @@ export const webpackConfigure = (
     },
     resolve,
     // This can make build slower, faster, also affect to file size
-    devtool: mode !== "production" ? config.devSourceMap : undefined,
+    devtool: mode !== "production" ? config.devSourceMap : false,
     entry: [
       path.resolve(process.cwd(), "./src/index.tsx"),
       path.resolve(process.cwd(), "./src/index.scss"),
