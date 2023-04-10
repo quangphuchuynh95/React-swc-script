@@ -98,20 +98,23 @@ export const webpackConfigure = (
     resolveLoader.modules.push(...process.env.NODE_PATH.split(":"));
     resolve.modules.push(...process.env.NODE_PATH.split(":"));
   }
+  const defines = Object.fromEntries(
+    Object.entries(process.env)
+      .filter(
+        ([key]) =>
+          ["NODE_ENV", "PUBLIC_PATH"].includes(key) ||
+          key.startsWith("REACT_APP")
+      )
+      .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
+  )
   const plugins: Exclude<Webpack.Configuration["plugins"], undefined> = [
     new CopyPlugin({
       patterns: [path.resolve(process.cwd(), "public")],
     }),
     new Webpack.DefinePlugin({
-      ...Object.fromEntries(
-        Object.entries(process.env)
-          .filter(
-            ([key]) =>
-              ["NODE_ENV", "PUBLIC_PATH"].includes(key) ||
-              key.startsWith("REACT_APP")
-          )
-          .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
-      ),
+      ...defines,
+      'process.env.PUBLIC_URL': JSON.stringify(process.env.PUBLIC_URL ?? '/'),
+      'process.env': JSON.stringify({})
     }),
     new HtmlWebpackPlugin({
       templateParameters: process.env,
@@ -166,6 +169,7 @@ export const webpackConfigure = (
   return {
     mode,
     cache,
+    target: 'web',
     infrastructureLogging: {
       appendOnly: true,
       level: "verbose",
