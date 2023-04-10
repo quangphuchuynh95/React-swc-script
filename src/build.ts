@@ -4,10 +4,13 @@ import { webpackConfigure } from "./config";
 import bytes from "bytes";
 import Table from "cli-table";
 
-export function build(mode: Exclude<Webpack.Configuration["mode"], undefined>) {
+export function build(
+  mode: Exclude<Webpack.Configuration["mode"], undefined>,
+  target: "web" | "lib"
+) {
   return new Promise<void>((resolve, reject) => {
     console.log(green("Building...."));
-    webpack(webpackConfigure(mode, "build"), (err, stats) => {
+    webpack(webpackConfigure(mode, "build", target), (err, stats) => {
       if (err) {
         console.log(err.message.slice(0, 100));
         resolve();

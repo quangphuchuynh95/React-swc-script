@@ -11,12 +11,13 @@ program
   .command("build")
   .description("Build")
   .argument("[mode]", "build mode (prod|dev) default is prod")
-  .action(async (mode = "prod") => {
+  .argument("[target]", "target (web|lib) default is web")
+  .action(async (mode = "prod", target = "web") => {
     try {
       if (mode === "dev") {
-        await build("development");
+        await build("development", target);
       } else {
-        await build("production");
+        await build("production", target);
       }
       process.exit(0);
     } catch (e) {

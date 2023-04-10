@@ -1,6 +1,6 @@
 import { webpackConfigure } from "./config";
 
-export const productionConfig = webpackConfigure("production", "build");
+export const productionConfig = webpackConfigure("production", "build", "web");
 
 export * from "./build";
 export * from "./config";

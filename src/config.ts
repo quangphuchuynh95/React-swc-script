@@ -11,6 +11,7 @@ import * as fs from "fs";
 import { execSync } from "child_process";
 
 export interface ReactSwcConfig {
+  libEntry: string;
   templateFile: string;
   projectRoot: string;
   devSourceMap: string;
@@ -21,12 +22,14 @@ export interface ReactSwcConfig {
 
 export const webpackConfigure = (
   mode: Exclude<Webpack.Configuration["mode"], undefined>,
-  action: "build" | "serve"
+  action: "build" | "serve",
+  target: "web" | "lib"
 ): Webpack.Configuration => {
   const isDevelopment = mode === "development";
   loadEnvFiles(mode);
   process.env.NODE_ENV = mode;
   let config: ReactSwcConfig = {
+    libEntry: "src/lib.tsx",
     templateFile: "index.html",
     projectRoot: ".",
     packageManager: "npm",
@@ -106,15 +109,15 @@ export const webpackConfigure = (
           key.startsWith("REACT_APP")
       )
       .map(([key, value]) => [`process.env.${key}`, JSON.stringify(value)])
-  )
+  );
   const plugins: Exclude<Webpack.Configuration["plugins"], undefined> = [
     new CopyPlugin({
       patterns: [path.resolve(process.cwd(), "public")],
     }),
     new Webpack.DefinePlugin({
       ...defines,
-      'process.env.PUBLIC_URL': JSON.stringify(process.env.PUBLIC_URL ?? '/'),
-      'process.env': JSON.stringify({})
+      "process.env.PUBLIC_URL": JSON.stringify(process.env.PUBLIC_URL ?? "/"),
+      "process.env": JSON.stringify({}),
     }),
     new HtmlWebpackPlugin({
       templateParameters: process.env,
@@ -165,11 +168,42 @@ export const webpackConfigure = (
       cacheDirectory: path.resolve(process.cwd(), config.cacheDir),
     };
   }
+  let entry: Webpack.Configuration["entry"];
+  let output: Webpack.Configuration["output"];
+
+  if (target === "web") {
+    entry = [
+      path.resolve(process.cwd(), "./src/index.tsx"),
+      path.resolve(process.cwd(), "./src/index.scss"),
+    ];
+    output = {
+      publicPath: process.env.PUBLIC_URL || "/",
+      path: path.resolve(process.cwd(), "build"),
+      filename: path.join(
+        prefix,
+        mode === "development" ? "index.js" : "index.[fullhash].js"
+      ),
+      chunkFilename: path.join(
+        prefix,
+        `[id]${mode !== "development" ? ".[fullhash]" : ""}.bundle.js`
+      ),
+    };
+  } else {
+    entry = path.resolve(process.cwd(), config.libEntry);
+    output = {
+      publicPath: path.resolve(process.env.PUBLIC_URL || "/", "lib"),
+      path: path.resolve(process.cwd(), "build", "lib"),
+      filename: "latest.js",
+      library: "Dataflake",
+      libraryTarget: "umd",
+      umdNamedDefine: true,
+    };
+  }
 
   return {
     mode,
     cache,
-    target: 'web',
+    target: "web",
     infrastructureLogging: {
       appendOnly: true,
       level: "verbose",
@@ -186,22 +220,8 @@ export const webpackConfigure = (
     resolve,
     // This can make build slower, faster, also affect to file size
     devtool: mode !== "production" ? config.devSourceMap : false,
-    entry: [
-      path.resolve(process.cwd(), "./src/index.tsx"),
-      path.resolve(process.cwd(), "./src/index.scss"),
-    ],
-    output: {
-      publicPath: process.env.PUBLIC_URL || "/",
-      path: path.resolve(process.cwd(), "build"),
-      filename: path.join(
-        prefix,
-        mode === "development" ? "index.js" : "index.[fullhash].js"
-      ),
-      chunkFilename: path.join(
-        prefix,
-        `[id]${mode !== "development" ? ".[fullhash]" : ""}.bundle.js`
-      ),
-    },
+    entry,
+    output,
     plugins,
     performance:
       action !== "serve" || mode !== "production"
